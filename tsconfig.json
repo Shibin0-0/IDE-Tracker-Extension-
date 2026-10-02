@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "files": [],
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./apps/tracker-service" },
+    { "path": "./apps/vscode-extension" },
+    { "path": "./apps/antigravity-extension" }
+  ]
+}

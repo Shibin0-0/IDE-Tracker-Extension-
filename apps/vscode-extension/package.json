@@ -1,0 +1,28 @@
+{
+  "name": "@ide-usage-monitor/vscode-extension",
+  "displayName": "IDE Usage Monitor (VS Code)",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-only IDE usage monitor extension for Visual Studio Code",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "clean": "node -e \"const fs = require('fs'); fs.rmSync('dist', { recursive: true, force: true });\""
+  },
+  "dependencies": {
+    "@ide-usage-monitor/shared": "*"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.90.0"
+  }
+}

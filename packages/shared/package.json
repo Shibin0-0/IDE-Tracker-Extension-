@@ -1,0 +1,22 @@
+{
+  "name": "@ide-usage-monitor/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Common TypeScript types, interfaces, and constants for IDE Usage Monitor",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "node -e \"const fs = require('fs'); fs.rmSync('dist', { recursive: true, force: true });\""
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
