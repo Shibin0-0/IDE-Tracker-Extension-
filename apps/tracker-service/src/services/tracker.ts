@@ -5,35 +5,89 @@ import type {
   UsageEvent,
 } from "@ide-usage-monitor/shared";
 import type { DatabaseManager } from "../db/index.js";
+import { createWindowsActiveWindowProvider } from "../providers/windows/windows-active-window-provider.js";
+import { SessionManager } from "./session-manager.js";
 
 /**
- * Service interface for local IDE usage recording and metric queries.
+ * Service interface for local IDE usage tracking.
+ *
+ * The session lifecycle is handled by SessionManager.
+ * The legacy event/metrics methods remain part of the interface
+ * until the later local API/reporting layer is implemented.
  */
 export interface UsageTrackerService {
+  start(): void;
+  stop(): Promise<void>;
+  getActiveIde(): ReturnType<SessionManager["getActiveIde"]>;
+  getActiveSessionId(): ReturnType<SessionManager["getActiveSessionId"]>;
+
   recordEvent(event: UsageEvent): Promise<IngestionResult>;
   getActiveSessions(): Promise<IdeSession[]>;
   getDailySummary(date: string): Promise<DailyUsageSummary | null>;
 }
 
 /**
- * Factory creating the local-only usage tracker service.
+ * Creates the local-only usage tracker service.
+ *
+ * Architecture:
+ * WindowsActiveWindowProvider
+ *        ↓
+ * SessionManager
+ *        ↓
+ * SessionRepository
+ *        ↓
+ * SQLite
  */
 export function createUsageTrackerService(
-  _dbManager: DatabaseManager,
+  dbManager: DatabaseManager,
 ): UsageTrackerService {
+  const provider = createWindowsActiveWindowProvider();
+  const repository = dbManager.getSessionRepository();
+
+  const sessionManager = new SessionManager(provider, repository);
+
   return {
-    async recordEvent(_event: UsageEvent): Promise<IngestionResult> {
-      // Placeholder: actual usage tracking logic to be implemented
-      return { success: true, receivedCount: 1 };
+    start(): void {
+      sessionManager.start();
     },
 
+    async stop(): Promise<void> {
+      await sessionManager.stop();
+    },
+
+    getActiveIde() {
+      return sessionManager.getActiveIde();
+    },
+
+    getActiveSessionId() {
+      return sessionManager.getActiveSessionId();
+    },
+
+    /**
+     * Legacy event ingestion API.
+     *
+     * File/command telemetry is intentionally not implemented.
+     * The current tracker records foreground IDE sessions only.
+     */
+    async recordEvent(_event: UsageEvent): Promise<IngestionResult> {
+      return {
+        success: false,
+        receivedCount: 0,
+        error: "Event ingestion is not implemented.",
+      };
+    },
+
+    /**
+     * Reporting will be implemented through the SQLite session
+     * repository when the local API/dashboard is added.
+     */
     async getActiveSessions(): Promise<IdeSession[]> {
-      // Placeholder: query active sessions from local SQLite
       return [];
     },
 
-    async getDailySummary(_date: string): Promise<DailyUsageSummary | null> {
-      // Placeholder: aggregate daily usage statistics from local SQLite
+    async getDailySummary(
+      _date: string,
+    ): Promise<DailyUsageSummary | null> {
       return null;
     },
   };
