@@ -8,6 +8,7 @@ import type { SessionRepository } from "../db/sessions.repository.js";
 export interface SessionManagerOptions {
   pollIntervalMs?: number;
   now?: () => Date;
+  sleepGapThresholdMs?: number;
 }
 
 export class SessionManager {
@@ -22,6 +23,8 @@ export class SessionManager {
   private activeIde: IdeSource | null = null;
   private activeSessionId: number | null = null;
   private sessionStartedAt: Date | null = null;
+  private lastPollAt: Date | null = null;
+  private readonly sleepGapThresholdMs: number;
 
   constructor(
     provider: ActiveWindowProvider,
@@ -32,6 +35,7 @@ export class SessionManager {
     this.repository = repository;
     this.pollIntervalMs = options.pollIntervalMs ?? 1000;
     this.now = options.now ?? (() => new Date());
+    this.sleepGapThresholdMs = options.sleepGapThresholdMs ?? 100_000;
   }
 
   /**
@@ -41,17 +45,23 @@ export class SessionManager {
    * the background polling timer.
    */
   async poll(): Promise<void> {
-    // Prevent overlapping polls if an OS query takes longer than
-    // the configured polling interval.
-    if (this.polling) {
-      return;
-    }
-
+    if (this.polling) return;
     this.polling = true;
 
     try {
-      const result: ActiveIdeResult | null =
-        await this.provider.getActiveIde();
+      const currentTime = this.now();
+
+      if (
+        this.lastPollAt !== null &&
+        currentTime.getTime() - this.lastPollAt.getTime() >
+          this.sleepGapThresholdMs
+      ) {
+        await this.handleSystemGap(this.lastPollAt);
+      }
+
+      this.lastPollAt = currentTime;
+
+      const result: ActiveIdeResult | null = await this.provider.getActiveIde();
 
       const detectedIde = result?.ide ?? null;
 
@@ -111,10 +121,35 @@ export class SessionManager {
   getActiveSessionId(): number | null {
     return this.activeSessionId;
   }
+  private async handleSystemGap(lastKnownActiveTime: Date): Promise<void> {
+    if (
+      this.activeSessionId === null ||
+      this.activeIde === null ||
+      this.sessionStartedAt === null
+    ) {
+      return;
+    }
 
-  private async handleIdeChange(
-    newIde: IdeSource | null,
-  ): Promise<void> {
+    const durationSeconds = Math.max(
+      0,
+      Math.floor(
+        (lastKnownActiveTime.getTime() - this.sessionStartedAt.getTime()) /
+          1000,
+      ),
+    );
+
+    this.repository.endSession(
+      this.activeSessionId,
+      lastKnownActiveTime.toISOString(),
+      durationSeconds,
+    );
+
+    this.activeIde = null;
+    this.activeSessionId = null;
+    this.sessionStartedAt = null;
+  }
+
+  private async handleIdeChange(newIde: IdeSource | null): Promise<void> {
     // Close the previous session first.
     await this.endActiveSession();
 
@@ -154,9 +189,7 @@ export class SessionManager {
 
     const durationSeconds = Math.max(
       0,
-      Math.floor(
-        (endedAt.getTime() - this.sessionStartedAt.getTime()) / 1000,
-      ),
+      Math.floor((endedAt.getTime() - this.sessionStartedAt.getTime()) / 1000),
     );
 
     this.repository.endSession(
