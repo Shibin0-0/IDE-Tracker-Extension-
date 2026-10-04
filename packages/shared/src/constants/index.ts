@@ -14,7 +14,7 @@ export const SUPPORTED_IDES: readonly IdeSource[] = [
 export const LOCAL_NETWORK = {
   /** The tracker service binds exclusively to loopback interface for local isolation */
   DEFAULT_HOST: "127.0.0.1",
-  DEFAULT_PORT: 47392,
+  DEFAULT_PORT: 3210,
   IPC_SOCKET_NAME: "ide_usage_monitor.sock",
 } as const;
 

@@ -85,9 +85,7 @@ export function createUsageTrackerService(
       return [];
     },
 
-    async getDailySummary(
-      _date: string,
-    ): Promise<DailyUsageSummary | null> {
+    async getDailySummary(_date: string): Promise<DailyUsageSummary | null> {
       return null;
     },
   };

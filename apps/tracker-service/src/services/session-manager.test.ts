@@ -49,7 +49,7 @@ function createManagerParts(provider: ActiveWindowProvider, now: () => Date) {
 
 describe("SessionManager", () => {
   it("starts a session when an IDE becomes active", async () => {
-    let currentTime = new Date("2026-10-02T10:00:00.000Z");
+    const currentTime = new Date("2026-10-02T10:00:00.000Z");
 
     const fake = createFakeProvider("vscode");
     const { manager, dbManager } = createTestManager(

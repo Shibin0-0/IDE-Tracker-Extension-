@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@ide-usage-monitor/shared": "*",
-    "better-sqlite3": "^11.8.0",
+    "better-sqlite3": "^13.0.3",
     "dotenv": "^16.4.7"
   },
   "devDependencies": {

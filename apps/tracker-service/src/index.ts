@@ -1,6 +1,7 @@
 import { pathToFileURL } from "node:url";
 import { loadConfig } from "./config/index.js";
 import { createDatabaseManager } from "./db/index.js";
+import { createHttpServer } from "./http/server.js";
 import { createUsageTrackerService } from "./services/tracker.js";
 
 export function bootstrap(): void {
@@ -14,16 +15,28 @@ export function bootstrap(): void {
   const trackerService = createUsageTrackerService(dbManager);
   trackerService.start();
 
-  // Graceful shutdown handling.
+  // Start the local-only HTTP API (bound strictly to 127.0.0.1).
+  const httpServer = createHttpServer(config.host, config.port, trackerService);
+
+  // Graceful shutdown: stop HTTP server, then tracker service, then close database.
   const shutdown = (): void => {
-    void trackerService.stop().finally(() => {
-      dbManager.close();
-      process.exit(0);
+    void httpServer.stop().finally(() => {
+      void trackerService.stop().finally(() => {
+        dbManager.close();
+        process.exit(0);
+      });
     });
   };
 
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
+
+  httpServer.start().catch((err: unknown) => {
+    console.error("[tracker-service] Failed to start HTTP server:", err);
+    if (!config.isDevelopment) {
+      process.exit(1);
+    }
+  });
 }
 
 // Start service when executed directly.

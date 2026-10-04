@@ -18,7 +18,7 @@ export interface AppConfig {
  * Strictly binds to loopback interface (127.0.0.1) by default to prevent external network exposure.
  */
 export function loadConfig(): AppConfig {
-  const host = process.env["HOST"] || LOCAL_NETWORK.DEFAULT_HOST;
+  const host = LOCAL_NETWORK.DEFAULT_HOST;
   const port = process.env["PORT"]
     ? Number(process.env["PORT"])
     : LOCAL_NETWORK.DEFAULT_PORT;
