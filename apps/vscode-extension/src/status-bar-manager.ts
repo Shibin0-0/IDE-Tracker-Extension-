@@ -31,40 +31,29 @@ export class StatusBarManager {
     this.statusBarItem.show();
   }
 
-  /**
-   * Starts polling the tracker service status.
-   */
   start(): void {
-    // Initial status check
     void this.updateStatus();
 
-    // Set up periodic polling
     this.pollInterval = setInterval(() => {
       void this.updateStatus();
     }, this.pollIntervalMs);
   }
 
-  /**
-   * Stops polling and cleans up resources.
-   */
   dispose(): void {
     if (this.pollInterval) {
       clearInterval(this.pollInterval);
       this.pollInterval = null;
     }
+
     this.statusBarItem.dispose();
   }
 
-  /**
-   * Fetches status from tracker service and updates the status bar.
-   */
   private async updateStatus(): Promise<void> {
     const result = await this.trackerClient.getStatus();
 
     if (!result.success) {
-      // Tracker service is offline or errored
-      this.statusBarItem.text = "$(error) Tracker Offline";
-      this.statusBarItem.tooltip = `Tracker service unavailable: ${result.error}`;
+      // Tracker service unavailable or errored
+      this.statusBarItem.color = undefined;
       this.statusBarItem.backgroundColor = new vscode.ThemeColor(
         "statusBarItem.errorBackground",
       );
@@ -74,27 +63,27 @@ export class StatusBarManager {
     const { activeIde, activeSessionId } = result.data;
 
     if (activeIde === null || activeSessionId === null) {
-      // Tracker is online but no active session
-      this.statusBarItem.text = "$(circle-outline) Tracker Idle";
-      this.statusBarItem.tooltip = "No active IDE session";
+      // Tracker is running but no IDE is active
+      this.statusBarItem.text = "$(circle-outline) VS Code Idle";
+      this.statusBarItem.tooltip = "VS Code is idle";
+      this.statusBarItem.color = undefined;
       this.statusBarItem.backgroundColor = undefined;
       return;
     }
 
-    // Active session detected
-    this.statusBarItem.text = `$(circle-filled) ${this.formatIdeName(activeIde)}`;
-    this.statusBarItem.tooltip = `Active: ${activeIde} (Session ${activeSessionId})`;
-    this.statusBarItem.backgroundColor = undefined;
+    // Active IDE session
+this.statusBarItem.text = `$(circle-filled) ${this.formatIdeName(activeIde)}`;
+this.statusBarItem.tooltip = `Active: ${activeIde} (Session ${activeSessionId})`;
+this.statusBarItem.color = new vscode.ThemeColor("charts.green");
+this.statusBarItem.backgroundColor = undefined;
   }
 
-  /**
-   * Formats IDE source name for display.
-   */
   private formatIdeName(ide: IdeSource): string {
     const nameMap: Record<IdeSource, string> = {
       vscode: "VS Code",
       antigravity: "Antigravity",
     };
+
     return nameMap[ide] ?? ide;
   }
 }
