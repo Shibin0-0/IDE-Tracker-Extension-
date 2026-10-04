@@ -14,6 +14,10 @@ function makeStubTracker(
     async stop(): Promise<void> {},
     getActiveIde: () => activeIde,
     getActiveSessionId: () => activeSessionId,
+    getTodayUsage: () => ({
+      byIde: { vscode: 3600, antigravity: 1800 },
+      totalSeconds: 5400,
+    }),
     async recordEvent() {
       return { success: false, receivedCount: 0 };
     },
@@ -150,6 +154,32 @@ describe("handleRequest (Unit Tests)", () => {
     });
   });
 
+  describe("GET /usage", () => {
+    it("returns 200 with today's usage summary", () => {
+      const tracker = makeStubTracker();
+      const fake = createFakeServerResponse();
+
+      handleRequest(tracker, createFakeIncomingMessage("GET", "/usage"), fake.res);
+
+      assert.equal(fake.statusCode(), 200);
+      const response = JSON.parse(fake.body());
+      assert.equal(response.date, "2026-10-04");
+      assert.deepEqual(response.byIde, { vscode: 3600, antigravity: 1800 });
+      assert.equal(response.totalSeconds, 5400);
+      assert.equal(fake.header("content-type"), "application/json");
+    });
+
+    it("returns 405 for unsupported methods on /usage", () => {
+      for (const method of ["POST", "PUT", "DELETE", "PATCH"]) {
+        const fake = createFakeServerResponse();
+        handleRequest(makeStubTracker(), createFakeIncomingMessage(method, "/usage"), fake.res);
+        assert.equal(fake.statusCode(), 405);
+        assert.deepEqual(JSON.parse(fake.body()), { error: "Method Not Allowed" });
+        assert.equal(fake.header("content-type"), "application/json");
+      }
+    });
+  });
+
   describe("Unknown routes and 404 handling", () => {
     it("returns 404 for unknown path /unknown", () => {
       const fake = createFakeServerResponse();
@@ -249,6 +279,22 @@ describe("createHttpServer (Integration Tests over 127.0.0.1)", () => {
 
   it("unsupported method returns 405", async () => {
     const res = await makeClientRequest("POST", "/health");
+    assert.equal(res.statusCode, 405);
+    assert.deepEqual(JSON.parse(res.body), { error: "Method Not Allowed" });
+  });
+
+  it("GET /usage returns 200 with today's usage data", async () => {
+    const res = await makeClientRequest("GET", "/usage");
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.headers["content-type"], "application/json");
+    const body = JSON.parse(res.body);
+    assert.equal(body.date, "2026-10-04");
+    assert.deepEqual(body.byIde, { vscode: 3600, antigravity: 1800 });
+    assert.equal(body.totalSeconds, 5400);
+  });
+
+  it("POST /usage returns 405", async () => {
+    const res = await makeClientRequest("POST", "/usage");
     assert.equal(res.statusCode, 405);
     assert.deepEqual(JSON.parse(res.body), { error: "Method Not Allowed" });
   });

@@ -38,6 +38,7 @@ function sendJson(res: ServerResponse, statusCode: number, body: unknown): void 
  * Handled routes:
  *   - GET /health -> { "status": "ok" }
  *   - GET /status -> { "activeIde": ..., "activeSessionId": ... }
+ *   - GET /usage -> { "date": ..., "byIde": {...}, "totalSeconds": ... }
  */
 export function handleRequest(
   tracker: UsageTrackerService,
@@ -67,6 +68,21 @@ export function handleRequest(
       sendJson(res, 200, {
         activeIde: tracker.getActiveIde(),
         activeSessionId: tracker.getActiveSessionId(),
+      });
+      return;
+    }
+
+    if (pathname === "/usage") {
+      if (method !== "GET") {
+        sendJson(res, 405, { error: "Method Not Allowed" });
+        return;
+      }
+      const usage = tracker.getTodayUsage();
+      const today = new Date().toISOString().split("T")[0];
+      sendJson(res, 200, {
+        date: today,
+        byIde: usage.byIde,
+        totalSeconds: usage.totalSeconds,
       });
       return;
     }

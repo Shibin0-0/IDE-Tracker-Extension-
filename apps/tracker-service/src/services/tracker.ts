@@ -3,6 +3,7 @@ import type {
   IdeSession,
   IngestionResult,
   UsageEvent,
+  UsageSummaryByIde,
 } from "@ide-usage-monitor/shared";
 import type { DatabaseManager } from "../db/index.js";
 import { createWindowsActiveWindowProvider } from "../providers/windows/windows-active-window-provider.js";
@@ -20,6 +21,7 @@ export interface UsageTrackerService {
   stop(): Promise<void>;
   getActiveIde(): ReturnType<SessionManager["getActiveIde"]>;
   getActiveSessionId(): ReturnType<SessionManager["getActiveSessionId"]>;
+  getTodayUsage(): UsageSummaryByIde;
 
   recordEvent(event: UsageEvent): Promise<IngestionResult>;
   getActiveSessions(): Promise<IdeSession[]>;
@@ -61,6 +63,17 @@ export function createUsageTrackerService(
 
     getActiveSessionId() {
       return sessionManager.getActiveSessionId();
+    },
+
+    getTodayUsage(): UsageSummaryByIde {
+      const today = new Date().toISOString().split("T")[0];
+      const endOfDay = `${today}T23:59:59.999Z`;
+      const startOfDay = `${today}T00:00:00.000Z`;
+
+      return repository.getTotalUsageAcrossAllIdes({
+        startDate: startOfDay,
+        endDate: endOfDay,
+      });
     },
 
     /**
