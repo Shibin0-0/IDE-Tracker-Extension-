@@ -2,6 +2,7 @@ import { request as httpRequest } from "node:http";
 import type {
   HealthResponse,
   StatusResponse,
+  UsageResponse,
   ErrorResponse,
 } from "@ide-usage-monitor/shared";
 
@@ -61,6 +62,15 @@ export class TrackerClient {
    */
   async getStatus(): Promise<ClientResult<StatusResponse>> {
     return this.makeRequest<StatusResponse>("/status");
+  }
+
+  /**
+   * Retrieves today's usage statistics from the tracker service.
+   *
+   * @returns Success with UsageResponse or failure with error message.
+   */
+  async getUsage(): Promise<ClientResult<UsageResponse>> {
+    return this.makeRequest<UsageResponse>("/usage");
   }
 
   /**

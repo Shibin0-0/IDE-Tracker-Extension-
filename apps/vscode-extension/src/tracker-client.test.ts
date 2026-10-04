@@ -44,6 +44,30 @@ describe("TrackerClient", () => {
         return;
       }
 
+      if (url === "/usage") {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            date: "2026-10-04",
+            byIde: { vscode: 3600, antigravity: 1800 },
+            totalSeconds: 5400,
+          }),
+        );
+        return;
+      }
+
+      if (url === "/usage-empty") {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            date: "2026-10-04",
+            byIde: { vscode: 0, antigravity: 0 },
+            totalSeconds: 0,
+          }),
+        );
+        return;
+      }
+
       if (url === "/error") {
         res.writeHead(500, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "Internal Server Error" }));
@@ -176,6 +200,57 @@ describe("TrackerClient", () => {
       if (result.success) {
         assert.equal(result.data.activeIde, null);
         assert.equal(result.data.activeSessionId, null);
+      }
+    });
+
+    it("returns failure when server returns error status", async () => {
+      const result = await (client as any).makeRequest("/error");
+
+      assert.equal(result.success, false);
+      if (!result.success) {
+        assert.equal(result.error, "Internal Server Error");
+      }
+    });
+
+    it("returns failure when endpoint not found", async () => {
+      const result = await (client as any).makeRequest("/not-found");
+
+      assert.equal(result.success, false);
+      if (!result.success) {
+        assert.equal(result.error, "Not Found");
+      }
+    });
+
+    it("returns failure when response is invalid JSON", async () => {
+      const result = await (client as any).makeRequest("/invalid-json");
+
+      assert.equal(result.success, false);
+      if (!result.success) {
+        assert.ok(result.error.includes("Failed to parse response"));
+      }
+    });
+  });
+
+  describe("getUsage", () => {
+    it("returns success with today's usage data", async () => {
+      const result = await client.getUsage();
+
+      assert.equal(result.success, true);
+      if (result.success) {
+        assert.equal(result.data.date, "2026-10-04");
+        assert.deepEqual(result.data.byIde, { vscode: 3600, antigravity: 1800 });
+        assert.equal(result.data.totalSeconds, 5400);
+      }
+    });
+
+    it("returns success with empty usage data when no sessions exist", async () => {
+      const result = await (client as any).makeRequest("/usage-empty");
+
+      assert.equal(result.success, true);
+      if (result.success) {
+        assert.equal(result.data.date, "2026-10-04");
+        assert.deepEqual(result.data.byIde, { vscode: 0, antigravity: 0 });
+        assert.equal(result.data.totalSeconds, 0);
       }
     });
 

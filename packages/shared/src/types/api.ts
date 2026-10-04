@@ -16,6 +16,15 @@ export interface StatusResponse {
 }
 
 /**
+ * Response from GET /usage endpoint.
+ */
+export interface UsageResponse {
+  date: string;
+  byIde: Record<IdeSource, number>;
+  totalSeconds: number;
+}
+
+/**
  * Generic error response structure.
  */
 export interface ErrorResponse {
