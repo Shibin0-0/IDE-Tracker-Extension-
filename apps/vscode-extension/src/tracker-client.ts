@@ -3,6 +3,7 @@ import type {
   HealthResponse,
   StatusResponse,
   UsageResponse,
+  SessionsResponse,
   ErrorResponse,
 } from "@ide-usage-monitor/shared";
 
@@ -71,6 +72,17 @@ export class TrackerClient {
    */
   async getUsage(): Promise<ClientResult<UsageResponse>> {
     return this.makeRequest<UsageResponse>("/usage");
+  }
+
+  /**
+   * Retrieves session history for a specific date from the tracker service.
+   *
+   * @param date The date in YYYY-MM-DD format (defaults to today).
+   * @returns Success with SessionsResponse or failure with error message.
+   */
+  async getSessions(date?: string): Promise<ClientResult<SessionsResponse>> {
+    const targetDate = date ?? new Date().toISOString().split("T")[0] ?? "";
+    return this.makeRequest<SessionsResponse>(`/sessions?date=${encodeURIComponent(targetDate)}`);
   }
 
   /**

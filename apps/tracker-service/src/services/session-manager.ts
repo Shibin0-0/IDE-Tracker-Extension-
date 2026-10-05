@@ -121,6 +121,43 @@ export class SessionManager {
   getActiveSessionId(): number | null {
     return this.activeSessionId;
   }
+
+  /**
+   * Returns the start timestamp of the active session (ISO 8601 format).
+   */
+  getActiveSessionStartedAt(): string | null {
+    return this.sessionStartedAt ? this.sessionStartedAt.toISOString() : null;
+  }
+
+  /**
+   * Returns all sessions for a given date (YYYY-MM-DD format).
+   * Includes the currently active session with its live elapsed time if applicable.
+   */
+  getSessionsForDate(date: string) {
+    const startOfDay = `${date}T00:00:00.000Z`;
+    const endOfDay = `${date}T23:59:59.999Z`;
+
+    const sessions = this.repository.getSessionsByDateRange(startOfDay, endOfDay);
+
+    // If there's an active session that started today, include its current elapsed time
+    if (this.activeSessionId !== null && this.sessionStartedAt !== null) {
+      const activeSession = sessions.find(s => s.id === this.activeSessionId);
+      if (activeSession && activeSession.endedAt === null) {
+        const nowMs = Date.now();
+        const startMs = Date.parse(activeSession.startedAt);
+        const elapsedSeconds = Math.max(0, Math.floor((nowMs - startMs) / 1000));
+        
+        // Return a modified version showing current duration
+        return sessions.map(s => 
+          s.id === this.activeSessionId 
+            ? { ...s, durationSeconds: elapsedSeconds }
+            : s
+        );
+      }
+    }
+
+    return sessions;
+  }
   private async handleSystemGap(lastKnownActiveTime: Date): Promise<void> {
     if (
       this.activeSessionId === null ||

@@ -2,11 +2,13 @@ import * as vscode from "vscode";
 import type { IdeSource } from "@ide-usage-monitor/shared";
 import { createTrackerClient, type TrackerClient } from "./tracker-client.js";
 import { StatusBarManager } from "./status-bar-manager.js";
+import { DashboardProvider } from "./dashboard-provider.js";
 
 export const SOURCE_ID: IdeSource = "vscode";
 
 let trackerClient: TrackerClient | null = null;
 let statusBarManager: StatusBarManager | null = null;
+let dashboardProvider: DashboardProvider | null = null;
 
 /**
  * Extension activation hook for Visual Studio Code.
@@ -27,6 +29,20 @@ export function activate(context: vscode.ExtensionContext): void {
   statusBarManager = new StatusBarManager(trackerClient, 30000);
   statusBarManager.start();
   context.subscriptions.push(statusBarManager);
+
+  // Create dashboard provider
+  dashboardProvider = new DashboardProvider(trackerClient, context.extensionUri);
+
+  // Register dashboard command
+  const dashboardCommand = vscode.commands.registerCommand(
+    "ide-usage-monitor.openDashboard",
+    () => {
+      if (dashboardProvider) {
+        dashboardProvider.show();
+      }
+    }
+  );
+  context.subscriptions.push(dashboardCommand);
 }
 
 /**
@@ -40,6 +56,7 @@ export function deactivate(): void {
   }
 
   trackerClient = null;
+  dashboardProvider = null;
 }
 
 /**

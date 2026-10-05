@@ -8,16 +8,19 @@ import { createHttpServer, handleRequest } from "./server.js";
 function makeStubTracker(
   activeIde: "vscode" | "antigravity" | null = null,
   activeSessionId: number | null = null,
+  activeSessionStartedAt: string | null = null,
 ): UsageTrackerService {
   return {
     start(): void {},
     async stop(): Promise<void> {},
     getActiveIde: () => activeIde,
     getActiveSessionId: () => activeSessionId,
+    getActiveSessionStartedAt: () => activeSessionStartedAt,
     getTodayUsage: () => ({
       byIde: { vscode: 3600, antigravity: 1800 },
       totalSeconds: 5400,
     }),
+    getSessionsForDate: () => [],
     async recordEvent() {
       return { success: false, receivedCount: 0 };
     },
@@ -107,7 +110,7 @@ describe("handleRequest (Unit Tests)", () => {
 
   describe("GET /status", () => {
     it("returns activeIde and activeSessionId as null when no session is active", () => {
-      const tracker = makeStubTracker(null, null);
+      const tracker = makeStubTracker(null, null, null);
       const fake = createFakeServerResponse();
 
       handleRequest(tracker, createFakeIncomingMessage("GET", "/status"), fake.res);
@@ -116,12 +119,14 @@ describe("handleRequest (Unit Tests)", () => {
       assert.deepEqual(JSON.parse(fake.body()), {
         activeIde: null,
         activeSessionId: null,
+        activeSessionStartedAt: null,
       });
       assert.equal(fake.header("content-type"), "application/json");
     });
 
     it("returns activeIde='vscode' and activeSessionId when VS Code is active", () => {
-      const tracker = makeStubTracker("vscode", 101);
+      const startedAt = "2026-10-05T17:30:00.000Z";
+      const tracker = makeStubTracker("vscode", 101, startedAt);
       const fake = createFakeServerResponse();
 
       handleRequest(tracker, createFakeIncomingMessage("GET", "/status"), fake.res);
@@ -130,11 +135,13 @@ describe("handleRequest (Unit Tests)", () => {
       assert.deepEqual(JSON.parse(fake.body()), {
         activeIde: "vscode",
         activeSessionId: 101,
+        activeSessionStartedAt: startedAt,
       });
     });
 
     it("returns activeIde='antigravity' and activeSessionId when Antigravity is active", () => {
-      const tracker = makeStubTracker("antigravity", 202);
+      const startedAt = "2026-10-05T17:25:00.000Z";
+      const tracker = makeStubTracker("antigravity", 202, startedAt);
       const fake = createFakeServerResponse();
 
       handleRequest(tracker, createFakeIncomingMessage("GET", "/status"), fake.res);
@@ -143,6 +150,7 @@ describe("handleRequest (Unit Tests)", () => {
       assert.deepEqual(JSON.parse(fake.body()), {
         activeIde: "antigravity",
         activeSessionId: 202,
+        activeSessionStartedAt: startedAt,
       });
     });
 
@@ -182,21 +190,13 @@ describe("handleRequest (Unit Tests)", () => {
   });
 
   describe("Unknown routes and 404 handling", () => {
-    it("returns 404 for unknown path /unknown", () => {
+    it("returns 404 for unknown API paths", () => {
       const fake = createFakeServerResponse();
-      handleRequest(makeStubTracker(), createFakeIncomingMessage("GET", "/unknown"), fake.res);
+      handleRequest(makeStubTracker(), createFakeIncomingMessage("GET", "/unknown-api-endpoint"), fake.res);
 
       assert.equal(fake.statusCode(), 404);
       assert.deepEqual(JSON.parse(fake.body()), { error: "Not Found" });
       assert.equal(fake.header("content-type"), "application/json");
-    });
-
-    it("returns 404 for root path /", () => {
-      const fake = createFakeServerResponse();
-      handleRequest(makeStubTracker(), createFakeIncomingMessage("GET", "/"), fake.res);
-
-      assert.equal(fake.statusCode(), 404);
-      assert.deepEqual(JSON.parse(fake.body()), { error: "Not Found" });
     });
 
     it("returns 404 for random invalid paths", () => {

@@ -14,6 +14,14 @@
   "activationEvents": [
     "onStartupFinished"
   ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "ide-usage-monitor.openDashboard",
+        "title": "IDE Usage Monitor: Open Dashboard"
+      }
+    ]
+  },
   "scripts": {
     "build": "tsc",
     "test": "node --test dist/tracker-client.test.js",

@@ -1,4 +1,5 @@
 import type { IdeSource } from "./events.js";
+import type { SessionRecord } from "./session.js";
 
 /**
  * Response from GET /health endpoint.
@@ -22,6 +23,14 @@ export interface UsageResponse {
   date: string;
   byIde: Record<IdeSource, number>;
   totalSeconds: number;
+}
+
+/**
+ * Response from GET /sessions endpoint.
+ */
+export interface SessionsResponse {
+  date: string;
+  sessions: SessionRecord[];
 }
 
 /**

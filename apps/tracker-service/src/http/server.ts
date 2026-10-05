@@ -37,8 +37,9 @@ function sendJson(res: ServerResponse, statusCode: number, body: unknown): void 
  * Dispatches an incoming HTTP request to the appropriate route.
  * Handled routes:
  *   - GET /health -> { "status": "ok" }
- *   - GET /status -> { "activeIde": ..., "activeSessionId": ... }
+ *   - GET /status -> { "activeIde": ..., "activeSessionId": ..., "activeSessionStartedAt": ... }
  *   - GET /usage -> { "date": ..., "byIde": {...}, "totalSeconds": ... }
+ *   - GET /sessions?date=YYYY-MM-DD -> array of session records for the specified date (defaults to today)
  */
 export function handleRequest(
   tracker: UsageTrackerService,
@@ -47,8 +48,8 @@ export function handleRequest(
 ): void {
   try {
     const rawUrl = req.url ?? "/";
-    // Parse pathname safely without query string
-    const pathname = rawUrl.split("?")[0] ?? "/";
+    // Parse pathname and query string safely
+    const [pathname, queryString] = rawUrl.split("?");
     const method = (req.method ?? "GET").toUpperCase();
 
     if (pathname === "/health") {
@@ -68,6 +69,7 @@ export function handleRequest(
       sendJson(res, 200, {
         activeIde: tracker.getActiveIde(),
         activeSessionId: tracker.getActiveSessionId(),
+        activeSessionStartedAt: tracker.getActiveSessionStartedAt(),
       });
       return;
     }
@@ -84,6 +86,21 @@ export function handleRequest(
         byIde: usage.byIde,
         totalSeconds: usage.totalSeconds,
       });
+      return;
+    }
+
+    if (pathname === "/sessions") {
+      if (method !== "GET") {
+        sendJson(res, 405, { error: "Method Not Allowed" });
+        return;
+      }
+      // Parse query parameters
+      const params = new URLSearchParams(queryString ?? "");
+      const dateParam = params.get("date");
+      const date = dateParam ?? new Date().toISOString().split("T")[0] ?? "";
+      
+      const sessions = tracker.getSessionsForDate(date);
+      sendJson(res, 200, { date, sessions });
       return;
     }
 

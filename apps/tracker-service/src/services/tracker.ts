@@ -21,7 +21,9 @@ export interface UsageTrackerService {
   stop(): Promise<void>;
   getActiveIde(): ReturnType<SessionManager["getActiveIde"]>;
   getActiveSessionId(): ReturnType<SessionManager["getActiveSessionId"]>;
+  getActiveSessionStartedAt(): ReturnType<SessionManager["getActiveSessionStartedAt"]>;
   getTodayUsage(): UsageSummaryByIde;
+  getSessionsForDate(date: string): ReturnType<SessionManager["getSessionsForDate"]>;
 
   recordEvent(event: UsageEvent): Promise<IngestionResult>;
   getActiveSessions(): Promise<IdeSession[]>;
@@ -65,6 +67,10 @@ export function createUsageTrackerService(
       return sessionManager.getActiveSessionId();
     },
 
+    getActiveSessionStartedAt() {
+      return sessionManager.getActiveSessionStartedAt();
+    },
+
     getTodayUsage(): UsageSummaryByIde {
       const today = new Date().toISOString().split("T")[0];
       const endOfDay = `${today}T23:59:59.999Z`;
@@ -91,6 +97,10 @@ export function createUsageTrackerService(
       }
 
       return usage;
+    },
+
+    getSessionsForDate(date: string) {
+      return sessionManager.getSessionsForDate(date);
     },
 
     /**
