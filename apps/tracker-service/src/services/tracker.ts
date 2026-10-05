@@ -70,10 +70,27 @@ export function createUsageTrackerService(
       const endOfDay = `${today}T23:59:59.999Z`;
       const startOfDay = `${today}T00:00:00.000Z`;
 
-      return repository.getTotalUsageAcrossAllIdes({
+      const usage = repository.getTotalUsageAcrossAllIdes({
         startDate: startOfDay,
         endDate: endOfDay,
       });
+
+      // Include active session's elapsed time
+      const activeSessionId = sessionManager.getActiveSessionId();
+      if (activeSessionId !== null) {
+        const activeSession = repository.getSessionById(activeSessionId);
+        if (activeSession && activeSession.startedAt) {
+          const startMs = Date.parse(activeSession.startedAt);
+          const nowMs = Date.now();
+          const elapsedSeconds = Math.max(0, Math.floor((nowMs - startMs) / 1000));
+
+          const ide = activeSession.ide;
+          usage.byIde[ide] = (usage.byIde[ide] ?? 0) + elapsedSeconds;
+          usage.totalSeconds += elapsedSeconds;
+        }
+      }
+
+      return usage;
     },
 
     /**

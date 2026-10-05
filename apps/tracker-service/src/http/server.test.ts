@@ -163,7 +163,8 @@ describe("handleRequest (Unit Tests)", () => {
 
       assert.equal(fake.statusCode(), 200);
       const response = JSON.parse(fake.body());
-      assert.equal(response.date, "2026-10-04");
+      const expectedDate = new Date().toISOString().split("T")[0];
+      assert.equal(response.date, expectedDate);
       assert.deepEqual(response.byIde, { vscode: 3600, antigravity: 1800 });
       assert.equal(response.totalSeconds, 5400);
       assert.equal(fake.header("content-type"), "application/json");
@@ -288,7 +289,8 @@ describe("createHttpServer (Integration Tests over 127.0.0.1)", () => {
     assert.equal(res.statusCode, 200);
     assert.equal(res.headers["content-type"], "application/json");
     const body = JSON.parse(res.body);
-    assert.equal(body.date, "2026-10-04");
+    const expectedDate = new Date().toISOString().split("T")[0];
+    assert.equal(body.date, expectedDate);
     assert.deepEqual(body.byIde, { vscode: 3600, antigravity: 1800 });
     assert.equal(body.totalSeconds, 5400);
   });
