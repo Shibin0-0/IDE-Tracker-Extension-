@@ -27,11 +27,12 @@ const StatusBarAlignment = {
 };
 
 const window = {
-  createStatusBarItem(alignment, priority) {
+  createStatusBarItem() {
     return new StatusBarItem();
   },
 };
 
+// eslint-disable-next-line no-undef
 module.exports = {
   ThemeColor,
   StatusBarAlignment,

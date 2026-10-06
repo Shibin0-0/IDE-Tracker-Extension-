@@ -8,6 +8,7 @@ import type { ClientResult, TrackerClient } from "./tracker-client.js";
 import { StatusBarManager } from "./status-bar-manager.js";
 
 // Import the mock helper to access created status bar items
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const vscode = require("vscode");
 
 /**

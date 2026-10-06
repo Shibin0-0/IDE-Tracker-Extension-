@@ -43,6 +43,7 @@ function createMockVSCode(): {
   } as unknown as vscode.ExtensionContext;
 
   // Mock vscode.window.createStatusBarItem
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (globalThis as any).vscode = {
     window: {
       createStatusBarItem: () => statusBarItem,
@@ -105,6 +106,7 @@ describe("Extension", () => {
     });
 
     // Clean up mock
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     delete (globalThis as any).vscode;
   });
 
