@@ -20,6 +20,21 @@ function makeStubTracker(
       byIde: { vscode: 3600, antigravity: 1800 },
       totalSeconds: 5400,
     }),
+    getUsageForDate: (date: string) => {
+      // For testing: return different values for past dates
+      const today = new Date().toISOString().split("T")[0];
+      if (date === today) {
+        return {
+          byIde: { vscode: 3600, antigravity: 1800 },
+          totalSeconds: 5400,
+        };
+      }
+      // Past date returns historical data (no active session included)
+      return {
+        byIde: { vscode: 2400, antigravity: 1200 },
+        totalSeconds: 3600,
+      };
+    },
     getSessionsForDate: () => [],
     async recordEvent() {
       return { success: false, receivedCount: 0 };
@@ -178,6 +193,36 @@ describe("handleRequest (Unit Tests)", () => {
       assert.equal(fake.header("content-type"), "application/json");
     });
 
+    it("returns usage for a specific date when date parameter is provided", () => {
+      const tracker = makeStubTracker();
+      const fake = createFakeServerResponse();
+
+      handleRequest(tracker, createFakeIncomingMessage("GET", "/usage?date=2026-10-04"), fake.res);
+
+      assert.equal(fake.statusCode(), 200);
+      const response = JSON.parse(fake.body());
+      assert.equal(response.date, "2026-10-04");
+      // Past date returns historical data (no active session)
+      assert.deepEqual(response.byIde, { vscode: 2400, antigravity: 1200 });
+      assert.equal(response.totalSeconds, 3600);
+      assert.equal(fake.header("content-type"), "application/json");
+    });
+
+    it("returns today's usage when date parameter is today", () => {
+      const tracker = makeStubTracker();
+      const fake = createFakeServerResponse();
+      const today = new Date().toISOString().split("T")[0];
+
+      handleRequest(tracker, createFakeIncomingMessage("GET", `/usage?date=${today}`), fake.res);
+
+      assert.equal(fake.statusCode(), 200);
+      const response = JSON.parse(fake.body());
+      assert.equal(response.date, today);
+      // Today includes active session
+      assert.deepEqual(response.byIde, { vscode: 3600, antigravity: 1800 });
+      assert.equal(response.totalSeconds, 5400);
+    });
+
     it("returns 405 for unsupported methods on /usage", () => {
       for (const method of ["POST", "PUT", "DELETE", "PATCH"]) {
         const fake = createFakeServerResponse();
@@ -269,6 +314,7 @@ describe("createHttpServer (Integration Tests over 127.0.0.1)", () => {
     assert.deepEqual(JSON.parse(res.body), {
       activeIde: "vscode",
       activeSessionId: 42,
+      activeSessionStartedAt: null,
     });
   });
 
@@ -293,6 +339,17 @@ describe("createHttpServer (Integration Tests over 127.0.0.1)", () => {
     assert.equal(body.date, expectedDate);
     assert.deepEqual(body.byIde, { vscode: 3600, antigravity: 1800 });
     assert.equal(body.totalSeconds, 5400);
+  });
+
+  it("GET /usage?date=2026-10-04 returns 200 with historical usage data", async () => {
+    const res = await makeClientRequest("GET", "/usage?date=2026-10-04");
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.headers["content-type"], "application/json");
+    const body = JSON.parse(res.body);
+    assert.equal(body.date, "2026-10-04");
+    // Past date returns historical data (no active session)
+    assert.deepEqual(body.byIde, { vscode: 2400, antigravity: 1200 });
+    assert.equal(body.totalSeconds, 3600);
   });
 
   it("POST /usage returns 405", async () => {

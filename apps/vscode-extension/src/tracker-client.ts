@@ -66,12 +66,14 @@ export class TrackerClient {
   }
 
   /**
-   * Retrieves today's usage statistics from the tracker service.
+   * Retrieves usage statistics for a specific date from the tracker service.
    *
+   * @param date The date in YYYY-MM-DD format (defaults to today).
    * @returns Success with UsageResponse or failure with error message.
    */
-  async getUsage(): Promise<ClientResult<UsageResponse>> {
-    return this.makeRequest<UsageResponse>("/usage");
+  async getUsage(date?: string): Promise<ClientResult<UsageResponse>> {
+    const targetDate = date ?? new Date().toISOString().split("T")[0] ?? "";
+    return this.makeRequest<UsageResponse>(`/usage?date=${encodeURIComponent(targetDate)}`);
   }
 
   /**

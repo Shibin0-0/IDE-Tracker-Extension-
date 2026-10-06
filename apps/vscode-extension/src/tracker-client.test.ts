@@ -15,14 +15,15 @@ describe("TrackerClient", () => {
 
     testServer = createServer((req, res) => {
       const url = req.url ?? "/";
+      const [pathname] = url.split("?");
 
-      if (url === "/health") {
+      if (pathname === "/health") {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ status: "ok" }));
         return;
       }
 
-      if (url === "/status") {
+      if (pathname === "/status") {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(
           JSON.stringify({
@@ -33,7 +34,7 @@ describe("TrackerClient", () => {
         return;
       }
 
-      if (url === "/status-null") {
+      if (pathname === "/status-null") {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(
           JSON.stringify({
@@ -44,7 +45,7 @@ describe("TrackerClient", () => {
         return;
       }
 
-      if (url === "/usage") {
+      if (pathname === "/usage") {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(
           JSON.stringify({
@@ -56,7 +57,7 @@ describe("TrackerClient", () => {
         return;
       }
 
-      if (url === "/usage-empty") {
+      if (pathname === "/usage-empty") {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(
           JSON.stringify({
@@ -68,19 +69,19 @@ describe("TrackerClient", () => {
         return;
       }
 
-      if (url === "/error") {
+      if (pathname === "/error") {
         res.writeHead(500, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "Internal Server Error" }));
         return;
       }
 
-      if (url === "/not-found") {
+      if (pathname === "/not-found") {
         res.writeHead(404, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "Not Found" }));
         return;
       }
 
-      if (url === "/invalid-json") {
+      if (pathname === "/invalid-json") {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end("not valid json");
         return;

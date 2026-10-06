@@ -85,7 +85,8 @@ export class DashboardProvider {
       }
 
       case "getUsage": {
-        const result = await this.trackerClient.getUsage();
+        const date = message.date ?? new Date().toISOString().split("T")[0];
+        const result = await this.trackerClient.getUsage(date);
         this.panel.webview.postMessage({
           command: "usageUpdate",
           data: result.success ? result.data : null,
@@ -366,9 +367,9 @@ export class DashboardProvider {
 
     <div id="error" class="error-message"></div>
 
-    <!-- Today's Usage Section -->
+    <!-- Usage Section -->
     <div class="section">
-      <h2 class="section-title">Today's Usage</h2>
+      <h2 class="section-title"><span id="usage-title">Today's Usage</span></h2>
       <div class="cards-grid">
         <div class="card">
           <div class="card-label">Total Usage</div>
@@ -477,6 +478,15 @@ export class DashboardProvider {
       const container = document.getElementById('current-session');
       if (!container) return;
 
+      // Only show current session when viewing today
+      const today = new Date().toISOString().split('T')[0];
+      if (currentDate !== today) {
+        container.innerHTML = '<span class="current-session-empty">No active session</span>';
+        activeSessionStartTime = null;
+        activeSessionIde = null;
+        return;
+      }
+
       if (!statusData || statusData.activeIde === null || !statusData.activeSessionStartedAt) {
         container.innerHTML = '<span class="current-session-empty">No active session</span>';
         activeSessionStartTime = null;
@@ -525,8 +535,8 @@ export class DashboardProvider {
     }
 
     // Request usage from extension
-    function requestUsage() {
-      vscode.postMessage({ command: 'getUsage' });
+    function requestUsage(date) {
+      vscode.postMessage({ command: 'getUsage', date });
     }
 
     // Request sessions from extension
@@ -609,6 +619,25 @@ export class DashboardProvider {
       }
     });
 
+    // Update usage title based on selected date
+    function updateUsageTitle(date) {
+      const titleEl = document.getElementById('usage-title');
+      if (!titleEl) return;
+      
+      const today = new Date().toISOString().split('T')[0];
+      if (date === today) {
+        titleEl.textContent = "Today's Usage";
+      } else {
+        const dateObj = new Date(date + 'T00:00:00');
+        const formatted = dateObj.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric', 
+          year: 'numeric' 
+        });
+        titleEl.textContent = formatted + " Usage";
+      }
+    }
+
     // Initialize date picker
     const datePicker = document.getElementById('date-picker');
     if (datePicker) {
@@ -618,23 +647,28 @@ export class DashboardProvider {
       
       datePicker.addEventListener('change', () => {
         currentDate = datePicker.value;
+        updateUsageTitle(currentDate);
+        requestUsage(currentDate);
         requestSessions(currentDate);
+        // Re-evaluate current session display when date changes
+        requestStatus();
       });
     }
 
     // Initial data load
+    updateUsageTitle(currentDate);
     requestStatus();
-    requestUsage();
+    requestUsage(currentDate);
     requestSessions(currentDate);
 
     // Refresh every 5 seconds
     setInterval(() => {
       requestStatus();
-      requestUsage();
       
-      // Refresh sessions if viewing today
+      // Refresh usage and sessions if viewing today
       const today = new Date().toISOString().split('T')[0];
       if (currentDate === today) {
+        requestUsage(currentDate);
         requestSessions(currentDate);
       }
     }, 5000);

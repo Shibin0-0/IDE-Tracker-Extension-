@@ -38,7 +38,7 @@ function sendJson(res: ServerResponse, statusCode: number, body: unknown): void 
  * Handled routes:
  *   - GET /health -> { "status": "ok" }
  *   - GET /status -> { "activeIde": ..., "activeSessionId": ..., "activeSessionStartedAt": ... }
- *   - GET /usage -> { "date": ..., "byIde": {...}, "totalSeconds": ... }
+ *   - GET /usage?date=YYYY-MM-DD -> { "date": ..., "byIde": {...}, "totalSeconds": ... } (defaults to today)
  *   - GET /sessions?date=YYYY-MM-DD -> array of session records for the specified date (defaults to today)
  */
 export function handleRequest(
@@ -79,10 +79,14 @@ export function handleRequest(
         sendJson(res, 405, { error: "Method Not Allowed" });
         return;
       }
-      const usage = tracker.getTodayUsage();
-      const today = new Date().toISOString().split("T")[0];
+      // Parse query parameters
+      const params = new URLSearchParams(queryString ?? "");
+      const dateParam = params.get("date");
+      const date = dateParam ?? new Date().toISOString().split("T")[0] ?? "";
+      
+      const usage = tracker.getUsageForDate(date);
       sendJson(res, 200, {
-        date: today,
+        date,
         byIde: usage.byIde,
         totalSeconds: usage.totalSeconds,
       });
