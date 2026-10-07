@@ -132,6 +132,16 @@ export function createHttpServer(
     handleRequest(tracker, req, res);
   });
 
+  // Track active connections so we can forcibly close them on shutdown
+  const activeConnections = new Set<import("net").Socket>();
+  
+  server.on("connection", (socket) => {
+    activeConnections.add(socket);
+    socket.once("close", () => {
+      activeConnections.delete(socket);
+    });
+  });
+
   return {
     start(): Promise<void> {
       return new Promise((resolve, reject) => {
@@ -145,6 +155,12 @@ export function createHttpServer(
 
     stop(): Promise<void> {
       return new Promise((resolve, reject) => {
+        // Forcibly close all active connections
+        for (const socket of activeConnections) {
+          socket.destroy();
+        }
+        activeConnections.clear();
+
         server.close((err) => {
           if (err) {
             reject(err);

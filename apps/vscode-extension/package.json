@@ -1,14 +1,28 @@
 {
-  "name": "@ide-usage-monitor/vscode-extension",
-  "displayName": "IDE Usage Monitor (VS Code)",
+  "name": "ide-usage-monitor",
+  "displayName": "IDE Usage Monitor",
   "version": "0.1.0",
   "private": true,
-  "description": "Local-only IDE usage monitor extension for Visual Studio Code",
+  "type": "module",
+  "description": "Local-only IDE usage monitor. Tracks VS Code foreground time with zero telemetry and SQLite persistence.",
+  "publisher": "local",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/local/ide-usage-monitor"
+  },
   "engines": {
     "vscode": "^1.90.0"
   },
   "categories": [
     "Other"
+  ],
+  "keywords": [
+    "usage",
+    "time tracking",
+    "productivity",
+    "local",
+    "privacy"
   ],
   "main": "./dist/extension.js",
   "activationEvents": [
@@ -24,14 +38,22 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "node --test dist/tracker-client.test.js",
+    "vscode:prepublish": "npm run build && npm run prepare-package",
+    "test": "node --test --test-force-exit dist/tracker-client.test.js dist/tracker-manager.test.js",
     "watch": "tsc --watch",
+    "prepare-package": "node prepare-package.mjs",
+    "package": "npx @vscode/vsce package",
     "clean": "node -e \"const fs = require('fs'); fs.rmSync('dist', { recursive: true, force: true });\""
   },
   "dependencies": {
-    "@ide-usage-monitor/shared": "*"
+    "@ide-usage-monitor/shared": "*",
+    "@ide-usage-monitor/tracker-service": "*",
+    "better-sqlite3": "^13.0.3",
+    "dotenv": "^16.4.7"
   },
   "devDependencies": {
-    "@types/vscode": "^1.90.0"
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^2.26.1"
   }
 }

@@ -19,6 +19,7 @@ export class SessionManager {
 
   private timer: NodeJS.Timeout | null = null;
   private polling = false;
+  private activePolling: Promise<void> | null = null;
 
   private activeIde: IdeSource | null = null;
   private activeSessionId: number | null = null;
@@ -45,10 +46,17 @@ export class SessionManager {
    * the background polling timer.
    */
   async poll(): Promise<void> {
-    if (this.polling) return;
+    if (this.polling) {
+      // If already polling, wait for the active poll to complete
+      if (this.activePolling) {
+        await this.activePolling;
+      }
+      return;
+    }
     this.polling = true;
 
-    try {
+    // Create and track the polling promise so stop() can wait for it
+    const pollingWork = (async () => {
       const currentTime = this.now();
 
       if (
@@ -71,8 +79,15 @@ export class SessionManager {
       }
 
       await this.handleIdeChange(detectedIde);
+    })();
+
+    this.activePolling = pollingWork;
+
+    try {
+      await pollingWork;
     } finally {
       this.polling = false;
+      this.activePolling = null;
     }
   }
 
@@ -103,6 +118,11 @@ export class SessionManager {
     if (this.timer !== null) {
       clearInterval(this.timer);
       this.timer = null;
+    }
+
+    // Wait for any active poll to complete before ending the session
+    if (this.activePolling) {
+      await this.activePolling;
     }
 
     await this.endActiveSession();

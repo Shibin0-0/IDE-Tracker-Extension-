@@ -1,0 +1,62 @@
+# Exclude parent directories - critical for monorepo
+../
+../../
+
+# Source files — only dist/ is needed at runtime
+src/
+test/
+
+# TypeScript project files
+tsconfig.json
+tsconfig.tsbuildinfo
+
+# Package scripts and tooling
+prepare-package.mjs
+
+# Dev-only files
+.vscode/
+.vscodeignore
+.gitignore
+
+# Test files
+**/*.test.js
+**/*.test.d.ts
+**/*.test.js.map
+**/*.test.d.ts.map
+
+# Misc dev artifacts
+.env
+.env.*
+data/
+*.log
+*.db
+*.db-shm
+*.db-wal
+
+# node_modules pruning - keep only runtime essentials
+node_modules/**/test/
+node_modules/**/tests/
+node_modules/**/*.test.js
+node_modules/**/*.md
+node_modules/**/README.md
+node_modules/**/CHANGELOG.md
+node_modules/**/LICENSE.md
+node_modules/**/SECURITY.md
+node_modules/**/docs/
+node_modules/**/benchmark/
+node_modules/**/example/
+node_modules/**/examples/
+
+# Exclude source from bundled packages
+node_modules/@ide-usage-monitor/*/src/
+node_modules/@ide-usage-monitor/*/tsconfig.json
+node_modules/@ide-usage-monitor/*/tsconfig.tsbuildinfo
+node_modules/@ide-usage-monitor/*/.env.example
+node_modules/@ide-usage-monitor/*/README.md
+node_modules/@ide-usage-monitor/tracker-service/data/
+
+# better-sqlite3: keep prebuilds and lib, exclude everything else
+node_modules/better-sqlite3/src/
+node_modules/better-sqlite3/deps/
+node_modules/better-sqlite3/binding.gyp
+node_modules/better-sqlite3/build/
