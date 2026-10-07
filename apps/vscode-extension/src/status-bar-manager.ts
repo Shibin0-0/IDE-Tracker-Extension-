@@ -28,6 +28,7 @@ export class StatusBarManager {
       vscode.StatusBarAlignment.Right,
       100,
     );
+    this.statusBarItem.command = "ide-usage-monitor.openDashboard";
     this.statusBarItem.show();
   }
 

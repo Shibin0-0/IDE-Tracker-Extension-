@@ -6,9 +6,10 @@ import assert from "node:assert/strict";
 import type { StatusResponse, UsageResponse } from "@ide-usage-monitor/shared";
 import type { ClientResult, TrackerClient } from "./tracker-client.js";
 import { StatusBarManager } from "./status-bar-manager.js";
+import { createRequire } from "node:module";
 
 // Import the mock helper to access created status bar items
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+const require = createRequire(import.meta.url);
 const vscode = require("vscode");
 
 /**
@@ -480,6 +481,84 @@ describe("StatusBarManager", () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       assert.match(getMockStatusBarItem().text, /VS Code · 0m/);
+    });
+  });
+
+  describe("click behavior", () => {
+    it("status bar item has dashboard command set", () => {
+      const client = createMockTrackerClient({
+        success: true,
+        data: { activeIde: null, activeSessionId: null },
+      });
+
+      manager = new StatusBarManager(client, 1000);
+
+      const item = getMockStatusBarItem();
+      assert.equal(item.command, "ide-usage-monitor.openDashboard");
+    });
+
+    it("command remains set after status updates", async () => {
+      const client = createMockTrackerClient({
+        success: true,
+        data: { activeIde: "vscode", activeSessionId: 1 },
+      });
+
+      manager = new StatusBarManager(client, 100);
+      manager.start();
+
+      // Wait for initial update
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      const item = getMockStatusBarItem();
+      assert.equal(item.command, "ide-usage-monitor.openDashboard");
+    });
+
+    it("command remains set in offline state", async () => {
+      const client = createMockTrackerClient({
+        success: false,
+        error: "Connection failed",
+      });
+
+      manager = new StatusBarManager(client, 100);
+      manager.start();
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      const item = getMockStatusBarItem();
+      assert.match(item.text, /Offline/);
+      assert.equal(item.command, "ide-usage-monitor.openDashboard");
+    });
+
+    it("command remains set in idle state", async () => {
+      const client = createMockTrackerClient({
+        success: true,
+        data: { activeIde: null, activeSessionId: null },
+      });
+
+      manager = new StatusBarManager(client, 100);
+      manager.start();
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      const item = getMockStatusBarItem();
+      assert.match(item.text, /Idle/);
+      assert.equal(item.command, "ide-usage-monitor.openDashboard");
+    });
+
+    it("command remains set in active state", async () => {
+      const client = createMockTrackerClient({
+        success: true,
+        data: { activeIde: "vscode", activeSessionId: 42 },
+      });
+
+      manager = new StatusBarManager(client, 100);
+      manager.start();
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      const item = getMockStatusBarItem();
+      assert.match(item.text, /VS Code/);
+      assert.equal(item.command, "ide-usage-monitor.openDashboard");
     });
   });
 });

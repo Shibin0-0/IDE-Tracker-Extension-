@@ -15,6 +15,7 @@ class StatusBarItem {
     this.tooltip = "";
     this.color = undefined;
     this.backgroundColor = undefined;
+    this.command = undefined;
   }
 
   show() {}
@@ -26,9 +27,13 @@ const StatusBarAlignment = {
   Right: 2,
 };
 
+// Track the last created status bar item for testing
+let lastStatusBarItem = null;
+
 const window = {
   createStatusBarItem() {
-    return new StatusBarItem();
+    lastStatusBarItem = new StatusBarItem();
+    return lastStatusBarItem;
   },
 };
 
@@ -37,4 +42,7 @@ module.exports = {
   ThemeColor,
   StatusBarAlignment,
   window,
+  getLastStatusBarItem() {
+    return lastStatusBarItem;
+  },
 };
