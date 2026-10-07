@@ -45,3 +45,6 @@ Thumbs.db
 !.vscode/settings.json
 !.vscode/extensions.json
 !.vscode/launch.json
+
+# VS Code extension packages
+*.vsix
